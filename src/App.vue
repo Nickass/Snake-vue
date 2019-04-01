@@ -3,9 +3,11 @@
     <img alt="Vue logo" src="./assets/logo.png">
     <CartesianArea :areaSize="areaSize" :ceilSize="[20, 20]">
       <Dot class="app__food" :position="foodPos" />
-      <Snake :direction="direction" @change="snakePositions" ref="snake" />
-      <DirectionController v-model="direction"/>
+      <Snake :key="snakeKey" :direction="direction" @change="snakePositions" ref="snake" />
+      <DirectionController :value="direction" @change="handleChangeDirection"/>
     </CartesianArea>
+    <button @click="isPlay = !isPlay">{{isPlay ? 'Stop' : 'Play'}}</button>
+    <button @click="resetGame">Reset</button>
   </div>
 </template>
 
@@ -23,9 +25,27 @@ export default {
       areaSize: [6, 6],
       direction: [1, 0],
       foodPos: [2, 4],
+      snakeKey: true,
+      isPlay: true,
     };
   },
+  watch: {
+    isPlay(play) {
+      if (play) {
+        this.$refs.snake.play();
+      } else {
+        this.$refs.snake.stop();
+      }
+    }
+  },
   methods: {
+    resetGame() {
+      this.snakeKey = !this.snakeKey;
+    },
+    handleChangeDirection(newDir) {
+      if (newDir[0] === -this.direction[0] && newDir[1] === -this.direction[1]) return;
+      else this.direction = newDir;
+    },
     allPositions() {
       const poss = [];
       for(let x = 0; x < this.areaSize[0]; x++) {
@@ -37,27 +57,39 @@ export default {
 
       return poss;
     },
-    snakePositions(positions) {
-      if (positions[0][0] === this.foodPos[0] && positions[0][1] === this.foodPos[1]) {
-        this.$refs.snake.catch();
-        this.foodPos = this.calcFoodPos(positions) || [0, 0];
-      }
-    },
-    calcFoodPos(positions) {
-      const all = this.allPositions();
-      
-      positions.forEach(pos => {
-        const [x, y] = pos;
-        all[x][y] = false;
+    snakePositions(snakePositions) {
+      const appPositions = this.allPositions();
+      const snake = this.$refs.snake;
+
+      snakePositions.slice(1).forEach(pos => {
+        if (snakePositions[0][0] === pos[0] && snakePositions[0][1] === pos[1]) {
+          alert('You loose!');
+          snake.stop();
+        }
       })
 
-      const empties = flatten(all.map((arr, x) => arr.filter((exist, y) => !!exist)));
-      const id = Math.floor(Math.random() * empties.length);
-    
-      if(!empties[id]) {
-        alert('You won!')
-        return false;
+      if (snakePositions[0][0] === this.foodPos[0] && snakePositions[0][1] === this.foodPos[1]) {
+        snake.catch();
+
+        const newFoodPos = this.calcFoodPos(appPositions, snakePositions);
+
+        if (!newFoodPos) {
+          snake.stop();
+          alert('You won');
+        }
+
+        this.foodPos = newFoodPos;
       }
+    },
+    calcFoodPos(allPositions, snakePositions) {
+      snakePositions.forEach(pos => {
+        const [x, y] = pos;
+        allPositions[x][y] = null;
+      })
+
+      const empties = flatten(allPositions.map((arr, x) => arr.filter((exist, y) => !!exist)));
+      const id = Math.floor(Math.random() * empties.length);
+      
       return empties[id];
     }
   },

@@ -15,6 +15,7 @@
 
 <script>
 import Dot from './Dot.vue';
+import { setInterval, clearInterval } from 'timers';
 
 export default {
   name: 'Snake',
@@ -44,6 +45,7 @@ export default {
       size,
       snakePos,
       positions,
+      intervalId: null
     }
   },
   methods: {
@@ -72,15 +74,22 @@ export default {
         newPosition[1] = 0;
       }
       
+      this.$emit('change', JSON.parse(JSON.stringify(this.positions)));
+      
       this.positions.unshift(newPosition);
       this.positions.pop();
       
-      this.$emit('change', JSON.parse(JSON.stringify(this.positions)));
+    },
+    stop() {
+      clearInterval(this.intervalId);
+      this.intervalId = null;
     },
     play() {
-      setInterval(() => {
-        this.run();
-      }, 1000/4);
+      if (this.intervalId) return;
+      
+      this.intervalId = setInterval(() => {
+        requestAnimationFrame(() => this.run());
+      }, 1000/2);
     }
   },
   components: {
