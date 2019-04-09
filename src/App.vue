@@ -1,9 +1,9 @@
 <template>
-  <div id="app">
+  <div id="app" :key="gameKey">
     <img alt="Vue logo" src="./assets/logo.png">
     <CartesianArea :areaSize="areaSize" :ceilSize="[20, 20]">
       <Dot class="app__food" :position="foodPos" />
-      <Snake :key="snakeKey" :direction="direction" @change="snakePositions" ref="snake" />
+      <Snake :direction="direction" @change="handleSnakePositions" ref="snake" />
       <DirectionController :value="direction" @change="handleChangeDirection"/>
     </CartesianArea>
     <button @click="isPlay = !isPlay">{{isPlay ? 'Stop' : 'Play'}}</button>
@@ -22,11 +22,11 @@ export default {
   name: 'app',
   data() {
     return {
-      areaSize: [6, 6],
+      areaSize: [4, 4],
       direction: [1, 0],
-      foodPos: [2, 4],
-      snakeKey: true,
-      isPlay: true,
+      foodPos: [0, 0],
+      gameKey: true,
+      isPlay: false,
     };
   },
   watch: {
@@ -40,7 +40,9 @@ export default {
   },
   methods: {
     resetGame() {
-      this.snakeKey = !this.snakeKey;
+      this.gameKey = !this.gameKey;
+      this.direction = [1, 0];
+      this.isPlay = false;
     },
     handleChangeDirection(newDir) {
       if (newDir[0] === -this.direction[0] && newDir[1] === -this.direction[1]) return;
@@ -57,14 +59,22 @@ export default {
 
       return poss;
     },
-    snakePositions(snakePositions) {
+    finishGame(win) {
+      if (win) {
+        alert('You won');
+      } else {
+        alert('You loose!');
+      }
+      
+      this.resetGame();
+    },
+    handleSnakePositions(snakePositions) {
       const appPositions = this.allPositions();
       const snake = this.$refs.snake;
-
+      
       snakePositions.slice(1).forEach(pos => {
         if (snakePositions[0][0] === pos[0] && snakePositions[0][1] === pos[1]) {
-          alert('You loose!');
-          snake.stop();
+          this.finishGame();
         }
       })
 
@@ -74,8 +84,7 @@ export default {
         const newFoodPos = this.calcFoodPos(appPositions, snakePositions);
 
         if (!newFoodPos) {
-          snake.stop();
-          alert('You won');
+          this.finishGame(true)
         }
 
         this.foodPos = newFoodPos;
